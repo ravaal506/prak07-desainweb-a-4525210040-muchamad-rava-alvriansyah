@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Mahasiswa Baru</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        <h1>Pendaftaran Mahasiswa Baru</h1>
+        <p>Lengkapi data di bawah ini dengan benar.</p>
+    </div>
+
+    <form id="formDaftar" novalidate>
+        <div class="grid">
+            <div class="field full">
+                <label for="nama">Nama Lengkap</label>
+                <input type="text" id="nama" placeholder="Masukkan nama lengkap">
+                <span class="error">Nama minimal 3 karakter.</span>
+            </div>
+
+            <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="contoh@email.com">
+                <span class="error">Format email tidak valid.</span>
+            </div>
+
+            <div class="field">
+                <label for="password">Password</label>
+                <div class="pw-wrap">
+                    <input type="password" id="password" placeholder="Min. 6 karakter">
+                    <button type="button" class="toggle-pw" id="togglePw">Lihat</button>
+                </div>
+                <span class="error">Password minimal 6 karakter.</span>
+            </div>
+
+            <div class="field">
+                <label for="tanggal">Tanggal Lahir</label>
+                <input type="date" id="tanggal">
+                <span class="error">Tanggal lahir wajib diisi.</span>
+            </div>
+
+            <div class="field">
+                <label for="nilai">Nilai Seleksi (0–100)</label>
+                <input type="number" id="nilai" min="0" max="100" placeholder="0 - 100">
+                <span class="error">Nilai harus antara 0 dan 100.</span>
+            </div>
+
+            <div class="field full">
+                <label for="jurusan">Jurusan</label>
+                <select id="jurusan">
+                    <option value="">-- Pilih jurusan --</option>
+                    <option>Teknik Informatika</option>
+                    <option>Sistem Informasi</option>
+                    <option>Manajemen</option>
+                </select>
+                <span class="error">Silakan pilih jurusan.</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn-daftar">Daftar</button>
+            <button type="reset" class="btn-reset">Reset</button>
+            <button type="button" class="btn-hapus" id="btnHapus">Hapus Hasil</button>
+        </div>
+    </form>
+
+    <div id="hasil"></div>
+</div>
+
+<script>
+    const form = document.getElementById("formDaftar");
+    const hasil = document.getElementById("hasil");
+    const pw = document.getElementById("password");
+
+    // Tampilkan / sembunyikan password
+    document.getElementById("togglePw").addEventListener("click", function () {
+        const tersembunyi = pw.type === "password";
+        pw.type = tersembunyi ? "text" : "password";
+        this.textContent = tersembunyi ? "Sembunyi" : "Lihat";
+    });
+
+    // Aturan validasi tiap field
+    const aturan = {
+        nama: v => v.trim().length >= 3,
+        email: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+        password: v => v.length >= 6,
+        tanggal: v => v !== "",
+        nilai: v => v !== "" && Number(v) >= 0 && Number(v) <= 100,
+        jurusan: v => v !== ""
+    };
+
+    function cek(id) {
+        const el = document.getElementById(id);
+        const valid = aturan[id](el.value);
+        el.closest(".field").classList.toggle("has-error", !valid);
+        return valid;
+    }
+
+    // Validasi langsung saat berpindah kolom
+    Object.keys(aturan).forEach(id => {
+        document.getElementById(id).addEventListener("blur", () => cek(id));
+    });
+
+    function hitungUsia(tgl) {
+        const lahir = new Date(tgl);
+        const now = new Date();
+        let usia = now.getFullYear() - lahir.getFullYear();
+        const m = now.getMonth() - lahir.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < lahir.getDate())) usia--;
+        return usia;
+    }
+
+    function kategori(n) {
+        if (n >= 85) return ["Sangat Baik", "a"];
+        if (n >= 70) return ["Baik", "b"];
+        if (n >= 55) return ["Cukup", "c"];
+        return ["Perlu Peningkatan", "d"];
+    }
+
+    function formatTanggal(tgl) {
+        return new Date(tgl).toLocaleDateString("id-ID", {
+            day: "numeric", month: "long", year: "numeric"
+        });
+    }
+
+    function esc(s) {
+        const d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const semuaValid = Object.keys(aturan).map(cek).every(Boolean);
+        if (!semuaValid) {
+            hasil.innerHTML = "";
+            return;
+        }
+
+        const nama = document.getElementById("nama").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const tanggal = document.getElementById("tanggal").value;
+        const nilai = Number(document.getElementById("nilai").value);
+        const jurusan = document.getElementById("jurusan").value;
+        const [label, kelas] = kategori(nilai);
+
+        hasil.innerHTML = `
+            <div class="result-box">
+                <h3>✔ Pendaftaran berhasil!</h3>
+                <table>
+                    <tr><td>Nama</td><td>${esc(nama)}</td></tr>
+                    <tr><td>Email</td><td>${esc(email)}</td></tr>
+                    <tr><td>Tanggal lahir</td><td>${formatTanggal(tanggal)} (${hitungUsia(tanggal)} tahun)</td></tr>
+                    <tr><td>Nilai</td><td>${nilai} <span class="badge ${kelas}">${label}</span></td></tr>
+                    <tr><td>Jurusan</td><td>${esc(jurusan)}</td></tr>
+                </table>
+            </div>`;
+    });
+
+    form.addEventListener("reset", function () {
+        hasil.innerHTML = "";
+        document.querySelectorAll(".field").forEach(f => f.classList.remove("has-error"));
+        pw.type = "password";
+        document.getElementById("togglePw").textContent = "Lihat";
+    });
+
+    document.getElementById("btnHapus").addEventListener("click", function () {
+        hasil.innerHTML = "";
+    });
+</script>
+
+</body>
+</html>
